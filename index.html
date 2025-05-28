@@ -313,9 +313,9 @@
       
       // Load from localStorage
       try {
-        const storedScore = localStorage.getItem('highScore');
+        const storedScore = localStorage.getItem('khighScore');
         highScore = storedScore !== null ? parseFloat(storedScore) : Infinity;
-        playerName = localStorage.getItem('playerName') || '';
+        playerName = localStorage.getItem('kplayerName') || '';
         console.log('localStorage highScore:', highScore, 'playerName:', playerName);
       } catch (e) {
         console.log('localStorage access failed, using default highScore:', e);
@@ -331,9 +331,9 @@
       // Initialize leaderboard in localStorage if it doesn't exist
       function initializeLeaderboard() {
         try {
-          const storedLeaderboard = localStorage.getItem('gameLeaderboard');
+          const storedLeaderboard = localStorage.getItem('kgameLeaderboard');
           if (!storedLeaderboard) {
-            localStorage.setItem('gameLeaderboard', JSON.stringify(defaultLeaderboard));
+            localStorage.setItem('kgameLeaderboard', JSON.stringify(defaultLeaderboard));
             console.log('Initialized leaderboard with default data');
           }
         } catch (e) {
@@ -344,7 +344,7 @@
       // Get current leaderboard from localStorage
       function getLeaderboard() {
         try {
-          const storedLeaderboard = localStorage.getItem('gameLeaderboard');
+          const storedLeaderboard = localStorage.getItem('kgameLeaderboard');
           return storedLeaderboard ? JSON.parse(storedLeaderboard) : [...defaultLeaderboard];
         } catch (e) {
           console.log('Failed to get leaderboard:', e);
@@ -355,7 +355,7 @@
       // Save leaderboard to localStorage
       function saveLeaderboard(leaderboard) {
         try {
-          localStorage.setItem('gameLeaderboard', JSON.stringify(leaderboard));
+          localStorage.setItem('kgameLeaderboard', JSON.stringify(leaderboard));
           console.log('Leaderboard saved:', leaderboard);
         } catch (e) {
           console.log('Failed to save leaderboard:', e);
@@ -390,7 +390,7 @@
           // Save player name for future use (only set if we don't already have one)
           if (!hasPlayerName) {
             playerName = newPlayerName;
-            localStorage.setItem('playerName', playerName);
+            localStorage.setItem('kplayerName', playerName);
             hasPlayerName = true;
             console.log('Player name saved for future use:', playerName);
           }
@@ -536,7 +536,7 @@
               }, 2000);
               
               try {
-                localStorage.setItem('highScore', highScore);
+                localStorage.setItem('khighScore', highScore);
                 console.log('High score saved:', highScore);
               } catch (e) {
                 console.log('Failed to save high score:', e);
