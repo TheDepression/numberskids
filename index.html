@@ -121,51 +121,95 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: 90%;
+      height: 100vh;
       background-color: rgba(0, 0, 0, 0.8);
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 20;
+      padding: 20px;
+      box-sizing: border-box;
     }
     #leaderboard {
       background-color: #fff;
       padding: 20px;
       border-radius: 10px;
-      max-width: 300px;
-      width: 90%;
+      max-width: 350px;
+      width: 100%;
       color: #000;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
     }
     #leaderboard h2 {
       margin-top: 0;
+      margin-bottom: 15px;
       text-align: center;
+      flex-shrink: 0;
+    }
+    #leaderboard-table-container {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 300px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      margin-bottom: 15px;
     }
     #leaderboard table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
     }
     #leaderboard th, #leaderboard td {
       padding: 8px;
       text-align: left;
       border-bottom: 1px solid #ddd;
     }
+    #leaderboard th {
+      background-color: #f5f5f5;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    #score-entry {
+      flex-shrink: 0;
+      margin-bottom: 15px;
+    }
     #name-input {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
       border: 1px solid #ccc;
-      font-size: 16px; /* Prevents zoom on iOS */
-      -webkit-appearance: none; /* Removes default iOS styling */
+      font-size: 16px;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      /* Prevent zoom on iOS */
+      transform-origin: left top;
+      transform: scale(1);
+    }
+    #name-input:focus {
+      outline: 2px solid #1035ac;
+      /* Prevent zoom by ensuring consistent font size */
+      font-size: 16px;
+    }
+    #button-container {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     #submit-score, #close-leaderboard {
-      padding: 8px 16px;
+      padding: 10px 16px;
       background-color: #1035ac;
       color: #fff;
       border: none;
       border-radius: 5px;
-      margin: 5px;
+      font-size: 14px;
+      min-width: 80px;
+      flex: 1;
+      max-width: 120px;
     }
     #loading-message {
       text-align: center;
@@ -182,6 +226,27 @@
     .player-row {
       background-color: #e6f3ff;
       font-weight: bold;
+    }
+
+    /* Mobile specific adjustments */
+    @media screen and (max-height: 600px) {
+      #leaderboard {
+        max-height: 90vh;
+        padding: 15px;
+      }
+      #leaderboard-table-container {
+        max-height: 250px;
+      }
+    }
+
+    @media screen and (max-height: 500px) {
+      #leaderboard {
+        max-height: 95vh;
+        padding: 10px;
+      }
+      #leaderboard-table-container {
+        max-height: 200px;
+      }
     }
   </style>
 </head>
@@ -200,22 +265,26 @@
       <div id="leaderboard">
         <h2>Leaderboard</h2>
         <div id="loading-message" style="display: none;">Loading...</div>
-        <table id="leaderboard-table">
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>Name</th>
-              <th>Time</th>
-            </tr>
-          </thead>
-          <tbody id="leaderboard-body"></tbody>
-        </table>
+        <div id="leaderboard-table-container">
+          <table id="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body"></tbody>
+          </table>
+        </div>
         <div id="score-entry" style="display: none;">
           <p><strong>Congratulations! You made the top 10!</strong></p>
           <input type="text" id="name-input" placeholder="Enter your name" maxlength="20">
-          <button id="submit-score">Submit Score</button>
         </div>
-        <button id="close-leaderboard">Close</button>
+        <div id="button-container">
+          <button id="submit-score" style="display: none;">Submit Score</button>
+          <button id="close-leaderboard">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -381,6 +450,22 @@
         return qualifies;
       }
 
+      // NEW: Check if this score would improve the player's existing record
+      function wouldImproveRecord(newScore) {
+        const leaderboard = getLeaderboard();
+        const existingEntry = leaderboard.find(entry => entry.name === playerName);
+        
+        if (!existingEntry) {
+          // No existing entry, so any qualifying score is an improvement
+          return checkTopTen(newScore);
+        }
+        
+        // Only show leaderboard entry if the new score is better than existing score
+        const wouldImprove = newScore < existingEntry.score;
+        console.log(`Existing score: ${existingEntry.score}, New score: ${newScore}, Would improve: ${wouldImprove}`);
+        return wouldImprove;
+      }
+
       // Submit score to local leaderboard
       function submitScore(newPlayerName, score) {
         try {
@@ -457,6 +542,7 @@
       function showLeaderboard(showScoreEntry = false) {
         displayLeaderboard();
         elements.scoreEntry.style.display = showScoreEntry ? 'block' : 'none';
+        elements.submitScoreButton.style.display = showScoreEntry ? 'block' : 'none';
         elements.leaderboardOverlay.style.display = 'flex';
         
         if (showScoreEntry) {
@@ -466,10 +552,13 @@
             console.log('Using existing player name:', playerName);
             submitScore(playerName, currentScore);
             elements.scoreEntry.style.display = 'none';
+            elements.submitScoreButton.style.display = 'none';
             currentScore = null;
           } else {
             // First time on leaderboard - ask for name
-            elements.nameInput.focus();
+            setTimeout(() => {
+              elements.nameInput.focus();
+            }, 100);
           }
         }
       }
@@ -549,15 +638,15 @@
             elements.restartButton.style.display = 'none';
             isInteractive = false;
 
-            // Show leaderboard if score qualifies for top 10
-            const isTopTen = checkTopTen(timer);
-            console.log('Score qualifies for top 10:', isTopTen);
+            // UPDATED: Only show leaderboard if this would improve the player's record
+            const shouldShowLeaderboard = wouldImproveRecord(timer);
+            console.log('Should show leaderboard for record improvement:', shouldShowLeaderboard);
             
-            if (isTopTen) {
+            if (shouldShowLeaderboard) {
               console.log('Showing leaderboard with score entry');
               showLeaderboard(true);
             } else {
-              console.log('Score does not qualify for leaderboard display');
+              console.log('Score does not improve existing record, not showing leaderboard');
             }
           }
         } else {
@@ -625,6 +714,7 @@
           elements.restartButton.style.display = 'none';
           elements.leaderboardOverlay.style.display = 'none';
           elements.scoreEntry.style.display = 'none';
+          elements.submitScoreButton.style.display = 'none';
           elements.nameInput.value = '';
           console.log('Calling initGrid');
           initGrid();
@@ -679,6 +769,7 @@
         if (currentScore) {
           submitScore(newPlayerName, currentScore);
           elements.scoreEntry.style.display = 'none';
+          elements.submitScoreButton.style.display = 'none';
           elements.nameInput.value = '';
           currentScore = null;
         }
@@ -687,6 +778,7 @@
       addButtonListeners(elements.closeLeaderboardButton, () => {
         elements.leaderboardOverlay.style.display = 'none';
         elements.scoreEntry.style.display = 'none';
+        elements.submitScoreButton.style.display = 'none';
         elements.nameInput.value = '';
       }, 'Close Leaderboard');
 
